@@ -9,13 +9,23 @@
             height: 400px;
             width: 100%;
         }
+        #street-view {
+            height: 400px;
+            width: 100%;
+        }
     </style>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg &callback=initMap"></script>
+    <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&libraries=places&callback=initMap"
+    async
+    defer
+></script>
 
-    <script src="js/app.js"></script> <!-- Correct path to your JS file -->
+    <script src="js/app.js"></script>
 </head>
 <body>
     <h1>Select Two Locations to Get Street View Images</h1>
     <div id="map"></div>
+    <button id="fetch-images">Fetch Street View Images</button>
+    <div id="street-view"></div>
 </body>
 </html>
