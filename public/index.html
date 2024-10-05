@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Street View Image Fetcher</title>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+        #street-view {
+            height: 400px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        #street-view img {
+            margin: 10px;
+        }
+    </style>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg"></script> <!-- Replace with your API key -->
+</head>
+<body>
+    <h1>Click on the map to get Street View Images Between Two Points</h1>
+    <div id="map"></div>
+    <div id="street-view"></div>
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let clickCount = 0;
+        const locations = [];
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: { lat: 37.7749, lng: -122.4194 }, // Default location (San Francisco)
+                zoom: 13,
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+
+            map.addListener('click', (event) => {
+                clickCount++;
+                locations.push(event.latLng);
+
+                if (clickCount === 2) {
+                    calculateRoute(locations[0], locations[1]);
+                    clickCount = 0; // Reset after selecting two locations
+                    locations.length = 0; // Clear locations array for next use
+                }
+            });
+        }
+
+        function calculateRoute(startLocation, endLocation) {
+            directionsService.route({
+                origin: startLocation,
+                destination: endLocation,
+                travelMode: google.maps.TravelMode.DRIVING
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                    extractPointsAndSendToServer(response);
+                } else {
+                    window.alert('Directions request failed due to ' + status);
+                }
+            });
+        }
+
+        function extractPointsAndSendToServer(response) {
+            const route = response.routes[0];
+            const path = route.overview_path; // Get all points along the route
+            const imageUrls = []; // Array to store image URLs
+
+            // Reduce number of images by picking every Nth point
+            const N = Math.max(1, Math.floor(path.length / 10)); // Adjust N as needed
+
+            for (let i = 0; i < path.length; i += N) {
+                const location = path[i];
+                const streetViewUrl = getStreetViewUrl(location);
+                imageUrls.push(streetViewUrl);
+            }
+
+            // Send image URLs to the server to save images
+            saveImagesToServer(imageUrls);
+        }
+
+        function getStreetViewUrl(location) {
+            const lat = location.lat();
+            const lng = location.lng();
+            return `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${lng}&key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg`; // Replace with your API key
+        }
+
+        function saveImagesToServer(imageUrls) {
+            fetch('/save-images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ imageUrls: imageUrls }),
+            })
+            .then(response => response.text())
+            .then(data => {
+                console.log(data);
+                alert('Images saved to server.');
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('Failed to save images to server.');
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</body>
+</html>
+
